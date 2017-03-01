@@ -1,0 +1,32 @@
+#!/bin/bash
+
+PINTOS_DIR=`readlink -e $1`
+TOOLS_DIR=`readlink -m $2`
+BOCHS_LOCATION=`readlink -e $3`
+
+mkdir -p $TOOLS_DIR/bin
+mkdir -p $TOOLS_DIR/share
+
+echo -e "\033[1mCopying Pintos scripts \033[0m"
+cp -v $PINTOS_DIR/src/utils/backtrace          \
+      $PINTOS_DIR/src/utils/pintos             \
+      $PINTOS_DIR/src/utils/pintos-gdb         \
+      $PINTOS_DIR/src/utils/pintos-mkdisk      \
+      $PINTOS_DIR/src/utils/pintos-set-cmdline \
+      $PINTOS_DIR/src/utils/Pintos.pm          \
+      $TOOLS_DIR/bin
+
+echo -e "\033[1mCopying macro file \033[0m"
+cp -v $PINTOS_DIR/src/misc/gdb-macros          \
+      $TOOLS_DIR/share
+sed -i 's/PATH_TO_MACROS/$TOOLS_DIR\/share\/gdb-macros/g' $TOOLS_DIR/bin/pintos-gdb
+
+echo -e "\033[1mBuilding Pintos tools \033[0m"
+(cd $PINTOS_DIR/src/utils; make)
+cp -v $PINTOS_DIR/src/utils/squish-pty       \
+      $PINTOS_DIR/src/utils/squish-unix      \
+      $PINTOS_DIR/src/utils/setitimer-helper \
+      $TOOLS_DIR/bin
+
+echo -e "\033[1mPatching and building Bochs \033[0m"
+env SRCDIR=$BOCHS_LOCATION PINTOSDIR=$PINTOS_DIR DSTDIR=$TOOLS_DIR bash $PINTOS_DIR/src/misc/bochs-2.2.6-build.sh
